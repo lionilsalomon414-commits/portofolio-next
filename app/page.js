@@ -3,8 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
-const LOGIN_PATH = process.env.NEXT_PUBLIC_LOGIN_PATH || '/login';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://dummyjson.com';
+const LOGIN_PATH = process.env.NEXT_PUBLIC_LOGIN_PATH || '/user/login';
+
+const UMUR = '21';
+
+const COUNT = ['3', '2', '1', 'Start!'];
 
 const STORY = 'Aku mulai dari elektro medis, lalu pindah haluan ke Sistem Informasi karena ketemu hal yang bikin aku betah berjam-jam: ngoding sesuatu yang bisa langsung dilihat dan dipakai orang. Targetku dekat: front-end developer. Targetku jauh: software engineer yang paham banyak sisi.';
 
@@ -53,13 +57,11 @@ function Item({ title, lead, text }) {
   );
 }
 
-export default function Home() {
+function Site({ intro }) {
   const root = useRef(null);
   const kmRef = useRef(null);
   const progRef = useRef(null);
-  const finishRef = useRef(null);
   const [route, setRoute] = useState('all');
-  const [msg, setMsg] = useState('');
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -76,7 +78,7 @@ export default function Home() {
       if (reduce) return;
 
       const chars = gsap.utils.toArray('.ch');
-      gsap.from(chars, { yPercent: 110, rotate: 6, duration: 1.1, ease: 'expo.out', stagger: 0.07, delay: 0.2 });
+      gsap.from(chars, { yPercent: 110, rotate: 6, duration: 1.1, ease: 'expo.out', stagger: 0.07, delay: intro ? 0.9 : 0.2 });
 
       const hero = document.querySelector('.hero');
       const onMove = (e) => {
@@ -126,29 +128,6 @@ export default function Home() {
     });
   }, [route]);
 
-  async function onLogin(e) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const username = String(f.get('username') || '').trim();
-    const password = String(f.get('password') || '');
-    if (!username || !password) return setMsg('Isi username dan password dulu.');
-    if (!API_BASE) return setMsg('URL API belum diisi di file .env.local.');
-    setMsg('Memeriksa...');
-    try {
-      const res = await fetch(API_BASE + LOGIN_PATH, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) return setMsg(data.message || 'Login gagal. Cek username dan password.');
-      try { sessionStorage.setItem('token', data.accessToken || ''); } catch (_) {}
-      setMsg('Berhasil masuk. Selamat datang, ' + (data.firstName || username) + '!');
-      gsap.fromTo(finishRef.current, { scale: 0.96 }, { scale: 1, duration: 0.8, ease: 'elastic.out(1,0.5)' });
-    } catch (err) {
-      setMsg('Tidak bisa terhubung ke server. Coba lagi nanti.');
-    }
-  }
-
   return (
     <main ref={root}>
       <div className="track"><i ref={progRef} style={{ transform: 'scaleX(0)' }} /></div>
@@ -156,12 +135,14 @@ export default function Home() {
       <div className="dot" id="dot" />
 
       <header className="hero wrap">
-        <h1 aria-label="LionieL">
+        <h1 aria-label="LIONIL">
           <span className="m" aria-hidden="true">
-            {'LionieL'.split('').map((c, i) => <span className="ch" key={i}>{c}</span>)}
+            {'Lioniel'.split('').map((c, i) => <span className="ch" key={i}>{c}</span>)}
           </span>
         </h1>
-        <p>Mahasiswa Sistem Informasi, semester 3 di Universitas Terbuka. Lagi lari pelan tapi konsisten menuju front-end developer.</p>
+        <p>
+          <b>Lioniel Salomon Siregar{UMUR ? ', ' + UMUR + ' tahun' : ''}.</b> Mahasiswa Sistem Informasi semester 3, Universitas Terbuka. Lagi lari menuju posisi Front-end Developer Intern.
+        </p>
         <p className="hint">Scroll buat ikut lari. Jaraknya di pojok kanan atas, finish di 42,2 km.</p>
       </header>
 
@@ -196,24 +177,159 @@ export default function Home() {
       </section>
 
       <section className="join wrap">
-        <div className="grid">
-          <div>
-            <h2>Cek garis start</h2>
-            <form onSubmit={onLogin} noValidate>
-              <label>Username<input type="text" name="username" autoComplete="username" required /></label>
-              <label>Password<input type="password" name="password" autoComplete="current-password" required /></label>
-              <button className="go" type="submit">Masuk</button>
-              <p className="msg" role="status">{msg}</p>
-            </form>
-          </div>
+        <div className="grid links-only">
           <div className="links">
             <a href="https://github.com/lionilsalomon414-commits" target="_blank" rel="noopener noreferrer">GitHub</a>
             <a href="https://linkedin.com/in/lionil-salomon-siregar-54897a320" target="_blank" rel="noopener noreferrer">LinkedIn</a>
           </div>
         </div>
-        <div className="finish" id="finish" ref={finishRef}>Dream on.</div>
+        <div className="finish" id="finish">Dream on.</div>
         <footer>Lioniel Salomon Siregar · Cretivox Internship Experience Season II Batch 6</footer>
       </section>
     </main>
+  );
+}
+
+function Gate({ stage, setStage }) {
+  const ref = useRef(null);
+  const kmEl = useRef(null);
+  const [u, setU] = useState('');
+  const [p, setP] = useState('');
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [bib, setBib] = useState(0);
+  const [name, setName] = useState('');
+  const [n, setN] = useState(0);
+
+  useEffect(() => {
+    const reduce = reducedMotion();
+    if (stage === 'login') {
+      const ctx = gsap.context(() => {
+        if (!reduce) gsap.from('.gbox > *', { y: 24, opacity: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out' });
+      }, ref);
+      return () => ctx.revert();
+    }
+    if (stage === 'bib') {
+      const ctx = gsap.context(() => {
+        if (!reduce) gsap.fromTo('.bibc', { y: -180, rotate: -10, opacity: 0 }, { y: 0, rotate: -2, opacity: 1, duration: 1, ease: 'elastic.out(1,0.6)' });
+      }, ref);
+      const t = setTimeout(() => setStage('count'), reduce ? 700 : 2000);
+      return () => { clearTimeout(t); ctx.revert(); };
+    }
+    if (stage === 'count') {
+      const ctx = gsap.context(() => {
+        if (!reduce) gsap.fromTo('.cd', { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'power3.out' });
+      }, ref);
+      const t = setTimeout(() => { if (n < COUNT.length - 1) setN(n + 1); else setStage('run'); }, reduce ? 300 : 800);
+      return () => { clearTimeout(t); ctx.revert(); };
+    }
+    if (stage === 'run') {
+      const o = { v: 0 };
+      const tw = gsap.to(o, {
+        v: 42.2, duration: reduce ? 0.3 : 3.6, ease: 'power1.inOut',
+        onUpdate: () => { if (kmEl.current) kmEl.current.textContent = o.v.toFixed(1).replace('.', ',') + ' km'; },
+        onComplete: () => setStage('reveal'),
+      });
+      return () => tw.kill();
+    }
+    if (stage === 'reveal') {
+      const tw = gsap.to(ref.current, {
+        yPercent: -100, duration: reduce ? 0 : 0.9, delay: 0.2, ease: 'power3.inOut',
+        onComplete: () => setStage('site'),
+      });
+      return () => tw.kill();
+    }
+  }, [stage, n]);
+
+  async function onLogin(e) {
+    e.preventDefault();
+    if (busy) return;
+    const username = u.trim();
+    if (!username || !p) return setMsg('Nomor dada ga bisa diambil kalau formnya kosong.');
+    setBusy(true);
+    setMsg('Ngecek daftar peserta...');
+    try {
+      const res = await fetch(API_BASE + LOGIN_PATH, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: p }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(res.status === 400
+          ? 'Kamu ga ada di daftar peserta. Cek lagi username dan password-nya.'
+          : 'Panitia lagi sibuk. Coba lagi bentar.');
+        return;
+      }
+      try { sessionStorage.setItem('token', data.accessToken || data.token || data.access_token || 'ok'); } catch (_) {}
+      setName(data.firstName || username);
+      setBib(Math.floor(1000 + Math.random() * 9000));
+      setMsg('');
+      setStage('bib');
+    } catch (err) {
+      setMsg('Panitia ga jawab. Coba lagi bentar.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="gate" ref={ref} aria-label="Pengambilan nomor dada">
+      {stage === 'login' && (
+        <div className="gbox">
+          <h2>Pengambilan nomor dada</h2>
+          <p className="gm">Login dulu sebelum lewat garis start.</p>
+          <form onSubmit={onLogin} noValidate>
+            <label>Username<input type="text" value={u} onChange={(e) => setU(e.target.value)} autoComplete="username" /></label>
+            <label>Password<input type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="current-password" /></label>
+            <p className="msg" role="status">{msg}</p>
+            <div className="gtools">
+              <button className="ghost" type="button" onClick={() => { setU('emilys'); setP('emilyspass'); setMsg(''); }}>Isi otomatis</button>
+              <button className="go" type="submit">Masuk</button>
+            </div>
+          </form>
+          <p className="gm">Pengunjung: username emilys, password emilyspass</p>
+        </div>
+      )}
+      {stage === 'bib' && (
+        <div className="gbox">
+          <p className="gm">Terdaftar! Ini nomor dadamu.</p>
+          <div className="bibc"><small>PESERTA</small><strong>#{bib}</strong><span>{name} · Cretivox Run, 42,2 km</span></div>
+        </div>
+      )}
+      {stage === 'count' && (
+        <div className="gbox">
+          <p className="gm">Siap-siap di garis start</p>
+          <div className="cd" aria-live="polite">{COUNT[n]}</div>
+        </div>
+      )}
+      {(stage === 'run' || stage === 'reveal') && (
+        <div className="gbox">
+          <b className="gkm" ref={kmEl}>0,0 km</b>
+          <p className="gm">Lari dulu, halamannya nunggu di finish.</p>
+          <div className="road" aria-hidden="true">
+            <svg className="runner" width="44" height="76" viewBox="0 0 44 76">
+              <circle cx="22" cy="10" r="7" style={{ fill: 'var(--sky)' }} />
+              <rect x="14" y="19" width="16" height="22" rx="3" style={{ fill: 'var(--dust)' }} />
+              <g className="lg"><line x1="22" y1="40" x2="22" y2="68" strokeWidth="5" strokeLinecap="round" style={{ stroke: 'var(--sky)' }} /></g>
+              <g className="lg lg2"><line x1="22" y1="40" x2="22" y2="68" strokeWidth="5" strokeLinecap="round" style={{ stroke: 'var(--mist)' }} /></g>
+            </svg>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+export default function Home() {
+  const [stage, setStage] = useState('login');
+  useEffect(() => {
+    try { if (sessionStorage.getItem('token')) setStage('site'); } catch (_) {}
+  }, []);
+  const inSite = stage === 'reveal' || stage === 'site';
+  return (
+    <>
+      {inSite && <Site intro={stage === 'reveal'} />}
+      {stage !== 'site' && <Gate stage={stage} setStage={setStage} />}
+    </>
   );
 }
